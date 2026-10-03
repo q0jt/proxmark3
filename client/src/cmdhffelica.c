@@ -3540,7 +3540,7 @@ static int send_read_without_encryption_ex(uint8_t flags, uint16_t datalen, uint
             return PM3_ESOFT;
         }
 
-        const size_t expected_len = min_response_len + (block_count * FELICA_BLK_SIZE);
+        const size_t expected_len = min_response_len + (block_count * FELICA_BLK_SIZE) + 2U;
         if (resp.length < expected_len) {
             return PM3_ESOFT;
         }
