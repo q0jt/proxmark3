@@ -8635,7 +8635,7 @@ static int write_without_encryption(
     return PM3_SUCCESS;
 }
 
-static int parse_multiple_block_data(const uint8_t *data, const size_t datalen, uint8_t *out, uint8_t *outlen) {
+static int parse_multiple_block_data(const uint8_t *data, const size_t datalen, const uint8_t blk_nums, uint8_t *out, uint8_t *outlen) {
     if (datalen < 3) {
         PrintAndLogEx(ERR, "\ndata size must be at least 3 bytes");
         return PM3_EINVARG;
@@ -8663,10 +8663,15 @@ static int parse_multiple_block_data(const uint8_t *data, const size_t datalen, 
     memcpy(&num, data + res_size, sizeof(uint8_t));
     res_size++;
 
-    memcpy(out, data + res_size, num * FELICA_BLK_SIZE);
+    const uint8_t blk_data_size = num * FELICA_BLK_SIZE;
+    if (num == 0 || num != blk_nums) {
+        return PM3_ESOFT;
+    }
+
+    memcpy(out, data + res_size, blk_data_size);
 
     if (outlen) {
-        *outlen = num * FELICA_BLK_SIZE;
+        *outlen = blk_data_size;
     }
 
     return PM3_SUCCESS;
@@ -8882,7 +8887,7 @@ static int felica_internal_authentication(
     memset(pd, 0, sizeof(pd));
 
     uint8_t pd_len = 0;
-    ret = parse_multiple_block_data((const uint8_t *)&rd_resp, sizeof(rd_resp), pd, &pd_len);
+    ret = parse_multiple_block_data((const uint8_t *)&rd_resp, sizeof(rd_resp), (uint8_t)sizeof(blk_numbers2), pd, &pd_len);
     if (ret || pd_len != sizeof(pd)) {
         return PM3_ERFTRANS;
     }
@@ -8953,7 +8958,7 @@ static int felica_external_authentication(
 
     uint8_t wcnt_blk[FELICA_BLK_SIZE];
     uint8_t wcnt_len = 0;
-    ret = parse_multiple_block_data((const uint8_t *)&rd_resp, sizeof(rd_resp), wcnt_blk, &wcnt_len);
+    ret = parse_multiple_block_data((const uint8_t *)&rd_resp, sizeof(rd_resp), (uint8_t)sizeof(blk_numbers), wcnt_blk, &wcnt_len);
     if (ret || wcnt_len != sizeof(wcnt_blk)) {
         return PM3_ERFTRANS;
     }
